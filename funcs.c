@@ -276,12 +276,168 @@ int mode_b_parallel_rlc(void)
     return 1;
 }
 
-
-int menu_item_3(void)
+/*
+ * gets the amount of frequency points for mode C
+ * returns 0 if b is entered and 1 when the value is valid
+ */
+static int get_frequency_points(const char *prompt, int *points)
 {
-    printf("\n>> Mode C: RC Low-Pass Filter\n");
-    printf("Mode C has not been implemented yet.\n");
-    /* you can call a function from here that handles menu 3*/  
+    char buffer[128];
+    char *end;
+    long value;
+
+    for (;;) {
+        printf("%s", prompt);
+
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+            printf("\nInput error. Exiting.\n");
+            exit(1);
+        }
+
+        /* b or B goes back to the main menu */
+        if ((buffer[0] == 'b' || buffer[0] == 'B') &&
+            (buffer[1] == '\n' || buffer[1] == '\r' || buffer[1] == '\0')) {
+            return 0;
+        }
+
+        value = strtol(buffer, &end, 10);
+
+        while (isspace((unsigned char)*end)) {
+            end++;
+        }
+
+        if (end == buffer || *end != '\0' || value < 2 || value > 250) {
+            printf("Enter a whole number between 2 and 250, or b to go back.\n");
+        }
+        else {
+            *points = (int)value;
+            return 1;
+        }
+    }
+}
+
+
+int mode_c_low_pass(void)
+{
+    double input_voltage;
+    double resistance;
+    double capacitance;
+    double start_frequency;
+    double stop_frequency;
+
+    double cutoff_frequency;
+    double frequency_step;
+    double frequency;
+    double output_voltage;
+
+    int frequency_points;
+    int i;
+
+    FILE *csv_file;
+
+    printf("\n----------- Mode C: RC Low-Pass Filter ----------\n");
+    printf("Enter 'b' at any input to return to the main menu.\n\n");
+
+    /* reuse the validated input function from the previous modes */
+    if (!get_positive_double("Enter input voltage Vin (V): ", &input_voltage)) {
+        return 0;
+    }
+
+    if (!get_positive_double("Enter Resistance R (ohms): ", &resistance)) {
+        return 0;
+    }
+
+    if (!get_positive_double("Enter Capacitance C (farads): ", &capacitance)) {
+        return 0;
+    }
+
+    if (!get_positive_double("Enter start frequency (Hz): ", &start_frequency)) {
+        return 0;
+    }
+
+    /*
+     * keep asking until the stop frequency is greater than the start
+     * frequency so the frequency sweep always moves forwards
+     */
+    for (;;) {
+        if (!get_positive_double("Enter stop frequency (Hz): ", &stop_frequency)) {
+            return 0;
+        }
+
+        if (stop_frequency > start_frequency) {
+            break;
+        }
+
+        printf("Stop frequency must be greater than start frequency.\n");
+    }
+
+    if (!get_frequency_points(
+            "Enter number of frequency points (2-250): ",
+            &frequency_points)) {
+        return 0;
+    }
+
+    /*
+     * cutoff frequency is useful for checking where the filter
+     * output should start dropping
+     */
+    cutoff_frequency =
+        1.0 / (2.0 * M_PI * resistance * capacitance);
+
+    /*
+     * subtract one BEC eause both the start and stop frequencies
+     * are included in the selected amount of points
+     */
+    frequency_step =
+        (stop_frequency - start_frequency) /
+        (frequency_points - 1);
+
+    csv_file = fopen("mode_c_results.csv", "w");
+
+    if (csv_file == NULL) {
+        printf("Could not create mode_c_results.csv\n");
+        return 0;
+    }
+
+    /* column headings make the CSV easier to understand in Excel */
+    fprintf(csv_file, "Frequency_Hz,Output_Voltage_V\n");
+
+    printf("\nCutoff frequency: %.3f Hz\n", cutoff_frequency);
+    printf("\nFrequency (Hz)\tOutput Voltage (V)\n");
+    printf("-----------------------------------\n");
+
+    for (i = 0; i < frequency_points; i++) {
+
+        frequency = start_frequency + (i * frequency_step);
+
+        /*
+         * voltage magnitude of a first order RC low-pass filter:
+         * Vout = Vin / sqrt(1 + (2pifRC)^2)
+         */
+        output_voltage =
+            input_voltage /
+            sqrt(1.0 +
+                 ((2.0 * M_PI * frequency *
+                   resistance * capacitance) *
+                  (2.0 * M_PI * frequency *
+                   resistance * capacitance)));
+
+        /* same result is shown in the terminal and written to the CSV */
+        printf("%.3f\t\t%.6f\n", frequency, output_voltage);
+
+        fprintf(csv_file,
+                "%.6f,%.9f\n",
+                frequency,
+                output_voltage);
+    }
+
+    fclose(csv_file);
+
+    printf("-----------------------------------\n");
+    printf("%d frequency points calculated.\n", frequency_points);
+    printf("All results saved to mode_c_results.csv\n");
+    printf("The CSV file can now be opened and plotted in Excel.\n");
+
     return 1;
 }
 
