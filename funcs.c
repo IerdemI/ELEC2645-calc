@@ -163,11 +163,116 @@ int mode_a_series_rlc(void)
 }
 
 
-int menu_item_2(void)
+int mode_b_parallel_rlc(void)
 {
-    printf("\n>> Mode B: Parallel RLC Calculator\n");
-    printf("Mode B has not been implemented yet.\n");
-    /* you can call a function from here that handles menu 2 */  
+    double resistance;
+    double inductance;
+    double capacitance;
+    double frequency;
+
+    double angular_frequency;
+    double conductance;
+    double inductive_susceptance;
+    double capacitive_susceptance;
+    double total_susceptance;
+    double admittance_magnitude;
+
+    double denominator;
+    double impedance_real;
+    double impedance_imaginary;
+    double impedance_magnitude;
+    double phase_radians;
+    double phase_degrees;
+
+    printf("\n---------- Mode B: Parallel RLC Calculator ----------\n");
+    printf("Enter 'b' at any input to return to the main menu.\n\n");
+
+    /* reuse the same validated input function from mode A */
+    if (!get_positive_double("Enter resistance R (ohms): ", &resistance)) {
+        return 0;
+    }
+
+    if (!get_positive_double("Enter inductance L (henries): ", &inductance)) {
+        return 0;
+    }
+
+    if (!get_positive_double("Enter capacitance C (farads): ", &capacitance)) {
+        return 0;
+    }
+
+    if (!get_positive_double("Enter frequency f (Hz): ", &frequency)) {
+        return 0;
+    }
+
+    /* convert frequency to angular frequency */
+    angular_frequency = 2.0 * M_PI * frequency;
+
+    /*
+     * parallel branches are easier to combine using admittance
+     * G is conductance and B is susceptance*/
+    conductance = 1.0 / resistance;
+    inductive_susceptance = -1.0 / (angular_frequency * inductance);
+    capacitive_susceptance = angular_frequency * capacitance;
+
+    total_susceptance =
+        inductive_susceptance + capacitive_susceptance;
+
+    /* magnitude of the total admittance */
+    admittance_magnitude =
+        sqrt((conductance * conductance) +
+             (total_susceptance * total_susceptance));
+
+    /*
+     * take the repcrocal of the complex admittance to get impedance
+     * 1 / (G + jB) = (G - jB) / (G^2 + B^2)
+     */
+    denominator =
+        (conductance * conductance) +
+        (total_susceptance * total_susceptance);
+
+    impedance_real = conductance / denominator;
+    impedance_imaginary = -total_susceptance / denominator;
+
+    /* calculate impedance magnitude and phase */
+    impedance_magnitude =
+        sqrt((impedance_real * impedance_real) +
+             (impedance_imaginary * impedance_imaginary));
+
+    phase_radians = atan2(impedance_imaginary, impedance_real);
+    phase_degrees = phase_radians * (180.0 / M_PI);
+
+    printf("\n--------------- Results ---------------\n");
+    printf("Angular frequency:          %.3f rad/s\n", angular_frequency);
+
+    printf("\nAdmittance:\n");
+    printf("Conductance G:              %.6f S\n", conductance);
+    printf("Inductive susceptance BL:   %+.6f S\n", inductive_susceptance);
+    printf("Capacitive susceptance BC:  %+.6f S\n", capacitive_susceptance);
+    printf("Total susceptance B:        %+.6f S\n", total_susceptance);
+    printf("Admittance magnitude:       %.6f S\n", admittance_magnitude);
+
+    printf("\nEquivalent impedance:\n");
+    printf("Real component:             %.3f ohms\n", impedance_real);
+    printf("Imaginary component:        %+.3f ohms\n", impedance_imaginary);
+    printf("Impedance magnitude:        %.3f ohms\n", impedance_magnitude);
+    printf("Phase angle:                %.3f degrees\n", phase_degrees);
+
+    /*
+     * total susceptance near zero means the inductive and
+     * capacitive branches are nearly cancelling each other
+     */
+    if (fabs(total_susceptance) < 0.000001) {
+        printf("Circuit behaviour:          Approximately resonant\n");
+    }
+    else if (total_susceptance < 0.0) {
+        printf("Circuit behaviour:          Inductive\n");
+    }
+    else {
+        printf("Circuit behaviour:          Capacitive\n");
+    }
+
+    printf("---------------------------------------\n");
+
     return 1;
 }
 

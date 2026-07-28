@@ -79,7 +79,7 @@ static void select_menu_item(int input)
             completed = mode_a_series_rlc();
             break;
         case 2:
-            completed = menu_item_2();
+            completed = mode_b_parallel_rlc();
             break;
         case 3:
             completed = menu_item_3();
@@ -104,7 +104,7 @@ static void print_main_menu(void)
     printf("\n"
            "\t\t\t\t\t\t\n"
            "\t1. Series RLC Calculator\t\t\n"
-           "\t2. Menu item 2\t\t\n"
+           "\t2. Parallel RLC Calculator\t\t\n"
            "\t3. Menu item 3\t\t\n"
            "\t4. Menu item 4\t\t\n"
            "\t5. Exit\t\t\t\t\n"
@@ -125,7 +125,7 @@ static void go_back_to_main(void)
     } while (!(buf[0] == 'b' || buf[0] == 'B') || buf[1] != '\0');
 }
 
-/* Return 1 if s is an optional [+/-] followed by one-or-more digits, else 0. */
+/* RWETRNn 1 if s is an optional +,- followed by one or more digits, else 0. */
 static int is_integer(const char *s)
 {
     if (!s || !*s) return 0;
