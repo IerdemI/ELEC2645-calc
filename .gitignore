@@ -1,3 +1,4 @@
 *.exe
 *.out
 .vscode/
+mode_c_results.csv
