@@ -1,11 +1,11 @@
-# ELEC2645 RLC Calculator
+# ELEC2645 Calculator
 
 This project is a command-line calculator written in C for the ELEC2645 Embedded Systems Project.
 
 The calculator currently incudes:
 
 - Mode A - Series RLC Calculator
-- Mode B - N/A
+- Mode B - parallel RLC calculator
 - Mode C - N/A
 - Mode D - n\/\A
 
