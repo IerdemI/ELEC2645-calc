@@ -442,10 +442,12 @@ int mode_c_low_pass(void)
 }
 
 
-int menu_item_4(void)
+int mode_d_component_finder(void)
 {
-    printf("\n>> Additional Mode\n");
-    printf("Additional mode has not been implemented yet.\n");
-    /* you can call a function from here that handles menu 4 */  
+    printf("\n---------- Mode D: RC High-Pass Component Finder ----------\n");
+    printf("What would you like to calculate?\n\n");
+    printf("1. Capacitance\n");
+    printf("2. Resstance\n");
+
     return 1;
 }
