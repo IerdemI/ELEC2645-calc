@@ -3,6 +3,23 @@
 #include <ctype.h>
 #include <math.h>
 #include "funcs.h"
+#include <time.h>
+
+double resistor_values[] = {
+    1000, 1200, 1500, 1800,
+    2200, 2700, 3300, 3900,
+    4700, 5600, 6800, 8200
+};
+
+double capacitor_values[] = {
+    10e-9, 12e-9, 15e-9, 18e-9,
+    22e-9, 27e-9, 33e-9, 39e-9,
+    47e-9, 56e-9, 68e-9, 82e-9
+};
+
+/* realistic values for resistors and capacitors */
+
+
 
 /*
  * reads a positive floating-point value from the user
@@ -444,10 +461,24 @@ int mode_c_low_pass(void)
 
 int mode_d_component_finder(void)
 {
-    printf("\n---------- Mode D: RC High-Pass Component Finder ----------\n");
-    printf("What would you like to calculate?\n\n");
-    printf("1. Capacitance\n");
-    printf("2. Resstance\n");
+    double target_frequency;
+
+    double resistor_values[] = {
+        1000, 1200, 1500, 1800,
+        2200, 2700, 3300, 3900,
+        4700, 5600, 6800, 8200
+    };
+
+    double capacitor_values[] = {
+        10e-9, 12e-9, 15e-9, 18e-9,
+        22e-9, 27e-9, 33e-9, 39e-9,
+        47e-9, 56e-9, 68e-9, 82e-9
+    };
+
+    target_frequency = 500.0 + (rand() % 4501);
+
+    printf("\n========== Mode D: RC Component Finder ==========\n");
+    printf("Target cutoff frequency: %.0f Hz\n", target_frequency);
 
     return 1;
 }

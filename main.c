@@ -7,6 +7,9 @@
 #include <ctype.h>
 #include <math.h>
 #include "funcs.h"
+#include <time.h>
+
+srand((unsigned int)time(NULL));
 
 /* Prototypes mirroring the C++ version */
 static void main_menu(void);            /* runs in the main loop */
@@ -86,7 +89,9 @@ static void select_menu_item(int input)
             break;
         case 4:
             completed = mode_d_component_finder();
+
             break;
+
         default:
             printf("Bye!\n");
             exit(0);
@@ -106,7 +111,7 @@ static void print_main_menu(void)
            "\t1. Series RLC Calculator\t\t\n"
            "\t2. Parallel RLC Calculator\t\t\n"
            "\t3. RC Low-Pass Filter\t\t\n"
-           "\t4. RC High-Pass Component Finder\t\t\n"
+           "\t4. RC Component Finder\t\t\n"
            "\t5. Exit\t\t\t\t\n"
            "\t\t\t\t\t\t\n");
     printf("---------------------------------------------\n");
