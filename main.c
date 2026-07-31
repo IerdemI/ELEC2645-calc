@@ -9,7 +9,7 @@
 #include "funcs.h"
 #include <time.h>
 
-srand((unsigned int)time(NULL));
+
 
 /* Prototypes mirroring the C++ version */
 static void main_menu(void);            /* runs in the main loop */
@@ -21,6 +21,8 @@ static int  is_integer(const char *s);  /* validate integer string */
 
 int main(void)
 {
+
+    srand((unsigned int)time(NULL));
     /* this will run forever until we call exit(0) in select_menu_item() */
     for(;;) {
         main_menu();

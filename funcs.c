@@ -4,6 +4,8 @@
 #include <math.h>
 #include "funcs.h"
 #include <time.h>
+#include <conio.h>
+#include <windows.h>
 
 double resistor_values[] = {
     1000, 1200, 1500, 1800,
@@ -333,6 +335,85 @@ static int get_frequency_points(const char *prompt, int *points)
     }
 }
 
+static int get_choice_with_timeout(const char *prompt,
+                                   int min_choice,
+                                   int max_choice,
+                                   time_t deadline,
+                                   int *choice)
+{
+    char buffer[32];
+    int length = 0;
+    time_t last_shown_second = -1;
+
+    printf("%s", prompt);
+    fflush(stdout);
+
+    for (;;) {
+        time_t now = time(NULL);
+
+        if (now >= deadline) {
+            printf("\nTime ran out.\n");
+            return 0;
+        }
+
+        if (now != last_shown_second) {
+            long remaining = (long)(deadline - now);
+
+            printf("\rTime left: %2lds   ", remaining);
+            fflush(stdout);
+            last_shown_second = now;
+        }
+
+        if (_kbhit()) {
+            int ch = _getch();
+
+            if (ch == '\r' || ch == '\n') {
+                char *end;
+                long value;
+
+                if (length == 0) {
+                    continue;
+                }
+
+                buffer[length] = '\0';
+                value = strtol(buffer, &end, 10);
+
+                if (end != buffer && *end == '\0' &&
+                    value >= min_choice && value <= max_choice) {
+                    *choice = (int)value;
+                    putchar('\n');
+                    printf("\r");
+                    return 1;
+                }
+
+                printf("\nInvalid input. Enter a number between %d and %d: ",
+                       min_choice,
+                       max_choice);
+                fflush(stdout);
+                length = 0;
+                continue;
+            }
+
+            if (ch == '\b') {
+                if (length > 0) {
+                    length--;
+                    printf("\b \b");
+                    fflush(stdout);
+                }
+                continue;
+            }
+
+            if (isdigit((unsigned char)ch) && length < (int)sizeof(buffer) - 1) {
+                buffer[length++] = (char)ch;
+                putchar(ch);
+                fflush(stdout);
+            }
+        }
+        else {
+            Sleep(10);
+        }
+    }
+}
 
 int mode_c_low_pass(void)
 {
@@ -461,24 +542,202 @@ int mode_c_low_pass(void)
 
 int mode_d_component_finder(void)
 {
-    double target_frequency;
-
-    double resistor_values[] = {
-        1000, 1200, 1500, 1800,
-        2200, 2700, 3300, 3900,
-        4700, 5600, 6800, 8200
+    double resistor_values[] =
+    {
+        1000,1200,1500,1800,
+        2200,2700,3300,3900,
+        4700,5600,6800,8200
     };
 
-    double capacitor_values[] = {
-        10e-9, 12e-9, 15e-9, 18e-9,
-        22e-9, 27e-9, 33e-9, 39e-9,
-        47e-9, 56e-9, 68e-9, 82e-9
+    double capacitor_values[] =
+    {
+        10e-9,12e-9,15e-9,18e-9,
+        22e-9,27e-9,33e-9,39e-9,
+        47e-9,56e-9,68e-9,82e-9
     };
 
-    target_frequency = 500.0 + (rand() % 4501);
+    double decade_multipliers[] =
+    {
+        100.0, 10.0, 1.0, 0.1, 0.01
+    };
 
-    printf("\n========== Mode D: RC Component Finder ==========\n");
-    printf("Target cutoff frequency: %.0f Hz\n", target_frequency);
+    double capacitor_multipliers[] =
+    {
+        100.0, 10.0, 1.0
+    };
+
+    double available_resistors[4];
+    double available_capacitors[4];
+    double best_resistance = 0.0;
+    double best_capacitance = 0.0;
+    double best_cutoff = 0.0;
+    double best_error = 1000000.0;
+
+    int used[12] = {0};
+
+    printf("\n---------- Mode D: RC Component Finder ----------\n");
+
+    /* picking 4 unique resistors */
+
+    for(int i=0;i<12;i++)
+        used[i]=0;
+
+    for(int i=0;i<4;i++)
+    {
+        int index;
+
+        do
+        {
+            index = rand()%12;
+        }
+        while(used[index]);
+
+        used[index]=1;
+
+        available_resistors[i] =
+            resistor_values[index] * decade_multipliers[rand() % 5];
+    }
+
+    /* picking 4 unique capacitors */
+
+    for(int i=0;i<12;i++)
+        used[i]=0;
+
+    for(int i=0;i<4;i++)
+    {
+        int index;
+
+        do
+        {
+            index = rand()%12;
+        }
+        while(used[index]);
+
+        used[index]=1;
+
+        available_capacitors[i] =
+            capacitor_values[index] * capacitor_multipliers[rand() % 3];
+    }
+
+    double min_cutoff = 0.0;
+    double max_cutoff = 0.0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            double current_cutoff =
+                1.0 / (2.0 * M_PI *
+                       available_resistors[i] *
+                       available_capacitors[j]);
+
+            if (i == 0 && j == 0)
+            {
+                min_cutoff = current_cutoff;
+                max_cutoff = current_cutoff;
+            }
+            else
+            {
+                if (current_cutoff < min_cutoff)
+                {
+                    min_cutoff = current_cutoff;
+                }
+
+                if (current_cutoff > max_cutoff)
+                {
+                    max_cutoff = current_cutoff;
+                }
+            }
+        }
+    }
+
+    double target_frequency =
+        min_cutoff + ((double)rand() / (double)RAND_MAX) *
+        (max_cutoff - min_cutoff);
+
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            double current_cutoff =
+                1.0/(2*M_PI*
+                available_resistors[i]*
+                available_capacitors[j]);
+
+            double current_error =
+                fabs(target_frequency-current_cutoff)
+                /target_frequency*100.0;
+
+            if(current_error<best_error)
+            {
+                best_error=current_error;
+                best_resistance=available_resistors[i];
+                best_capacitance=available_capacitors[j];
+                best_cutoff=current_cutoff;
+            }
+        }
+    }
+
+    printf("\nTarget cutoff frequency: %.0f Hz\n", target_frequency);
+
+    printf("\nAvailable Resistors\n");
+
+    for(int i=0;i<4;i++)
+    {
+        printf("%d. %.0f Ohm\n",i+1,available_resistors[i]);
+    }
+
+    printf("\nAvailable Capacitors\n");
+
+    for(int i=0;i<4;i++)
+    {
+        printf("%d. %.0f nF\n",i+1,available_capacitors[i]*1e9);
+    }
+
+    int resistor_choice;
+    int capacitor_choice;
+    int timed_out = 0;
+
+    /* user has 20 seconds to decide which capacitor and resistor to choose, this can be changed to increase the time ( or reduce)*/
+    time_t deadline = time(NULL) + 20;
+
+    if (!get_choice_with_timeout("\nChoose a resistor (1-4): ",
+                                 1,
+                                 4,
+                                 deadline,
+                                 &resistor_choice)) {
+        timed_out = 1;
+    }
+
+    if (!timed_out && !get_choice_with_timeout("Choose a capacitor (1-4): ",
+                                               1,
+                                               4,
+                                               deadline,
+                                               &capacitor_choice)) {
+        timed_out = 1;
+    }
+    /* comparison with the chosen value and the best possible combination */
+    if (!timed_out) {
+        double R = available_resistors[resistor_choice-1];
+        double C = available_capacitors[capacitor_choice-1];
+        double cutoff =
+            1.0/(2*M_PI*R*C);
+        double error =
+            fabs(target_frequency-cutoff)/target_frequency*100.0;
+
+        printf("\nYour cutoff frequency = %.2f Hz\n", cutoff);
+        printf("Percentage error = %.2f%%\n", error);
+    }
+
+    printf("\nBest possible combination:\n");
+
+    printf("Resistance = %.0f Ohm\n",best_resistance);
+
+    printf("Capacitance = %.0f nF\n",best_capacitance*1e9);
+
+    printf("Cutoff = %.2f Hz\n",best_cutoff);
+
+    printf("Error = %.2f%%\n",best_error);
 
     return 1;
 }

@@ -6,8 +6,8 @@ The calculator currently incudes:
 
 - Mode A - Series RLC Calculator
 - Mode B - parallel RLC calculator
-- Mode C - N/A
-- Mode D - n\/\A
+- Mode C - RC lowpass filter calculator that plots output voltage across a frequency range and saves the results to CSV whils also providing the values in terminal.
+- Mode D - RC component finder game that generates random resistor and capacitor options, then compares them against a target cutoff frequency. If the users input match the closest one to the target cut-off requency programe corrects it. It also has a timer of 20 secnds 
 
 The program is split between `main.c` for menu handling and `funcs.c` for the calculator functions.
 
